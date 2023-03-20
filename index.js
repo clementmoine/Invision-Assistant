@@ -1,4 +1,4 @@
-async function invite(users) {
+async function invite(users, removeExisting = false) {
     const projectScope = angular.element('[ng-click="openShareModal()"]').scope();
     
     projectScope.openShareModal();
@@ -9,7 +9,10 @@ async function invite(users) {
     const inviteModalScope = angular.element('[inv-modal]').scope();
 
     inviteModalScope.teamMembers.forEach((member) => {
-        if (!users.includes(member.email) || member.isSelectedForProject) {
+        const shouldInvite = users.includes(member.email) && !member.isSelectedForProject;
+        const shouldRemove = !users.includes(member.email) && member.isSelectedForProject && removeExisting;
+
+        if (!shouldInvite && !shouldRemove) {
             return;
         }
 
