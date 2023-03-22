@@ -1,0 +1,23 @@
+{
+    "name": "InVision Assistant",
+    "description": "Assistant Invision pour effectuer des tâches rapides",
+    "version": "0.0.2",
+    "manifest_version": 3,
+    "content_scripts": [
+        {
+            "matches": ["*://*.projects.invisionapp.com/*"],
+            "js": ["index.js"],
+            "css": ["index.css"]
+        }
+    ],
+    "icons": {
+        "16": "icons/16.png",
+        "32": "icons/32.png",
+        "96": "icons/96.png"
+    },
+    "web_accessible_resources": [{
+        "resources": ["script.js"],
+        "matches": ["*://*.projects.invisionapp.com/*"]
+    }],
+    "permissions": []
+}
