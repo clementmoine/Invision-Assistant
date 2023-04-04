@@ -39,6 +39,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@clementmoine_](https://twitter.com/clementmoine_) - clement.moine86@gmail.com
+Clément MOINE - [@clementmoine_](https://twitter.com/clementmoine_) - clement.moine86@gmail.com
 
 Project Link: [https://github.com/clementmoine/invision-invite](https://github.com/clementmoine/invision-invite)
