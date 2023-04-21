@@ -1,12 +1,25 @@
+// This script allows the InVision Share page to display groups of users.
+// The groups are directly managed in the script with emails addressed
+// Note : The script needs to be injected in the Invision page since we need to access Angular Scope to run genuine inviting actions from custom buttons.
+
+// Groups list with a name and members emails
 const groups = [
 ];
 
+// Function to create an unique alpha-numerical id
 function uuidv4() {
   return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
   );
 }
 
+// Insert after function since insertBefore is the only natively implemented JS insert function
+function insertAfter(newNode, existingNode) {
+    existingNode.parentNode.insertBefore(newNode, existingNode.nextSibling);
+}
+
+
+// Get a user profile from his mail through the Angular teamMembers scope
 function getUserFromEmail(email) {
     const inviteModalScope = angular.element('[inv-modal]').scope();
     const currentUser = angular.element('body').scope().user;
@@ -14,6 +27,7 @@ function getUserFromEmail(email) {
     return currentUser.email === email ? currentUser : inviteModalScope.teamMembers.find((m) => m.email === email);
 }
 
+// Select users from emails to make them invited to the current project
 async function invite(emails, reverse = false) {
     const inviteModalScope = angular.element('[inv-modal]').scope();
     const currentUser = angular.element('body').scope().user;
@@ -37,10 +51,7 @@ async function invite(emails, reverse = false) {
     inviteModalScope.$apply();
 }
 
-function insertAfter(newNode, existingNode) {
-    existingNode.parentNode.insertBefore(newNode, existingNode.nextSibling);
-}
-
+// Add the group name information in the display of the genuine InVision user list
 function addGroupNameToUsers() {
     const inviteModal = document.querySelector('[inv-modal]');
     const usersList = inviteModal.querySelector('.user-list');
@@ -66,6 +77,7 @@ function addGroupNameToUsers() {
     });
 }
 
+// Move the save button after the tabs content to make it visible and usable for every tabs (group tab, user tab)
 function moveSaveBtn() {
     const inviteModal = document.querySelector('[inv-modal]');
     const actions = inviteModal.querySelector('.actions');
@@ -75,29 +87,7 @@ function moveSaveBtn() {
     insertAfter(actions, usersTabContent)
 }
 
-function createGroupsSearchBar() {
-    const inviteModal = document.querySelector('[inv-modal]');
-    const search = document.createElement('div');
-    search.classList.add('search');
-
-    const searchInput = document.createElement('input');
-    searchInput.setAttribute('type', 'text');
-    searchInput.setAttribute('autocomplete', 'off');
-    searchInput.setAttribute('placeholder', `Search ${groups.length} groups...`);
-
-    const searchFilterCount = document.createElement('span');
-    searchFilterCount.classList.add('count');
-
-    searchFilterCount.hidden = true;
-    searchFilterCount.innerHTML = `0/${groups.length}`;
-
-    search.append(searchInput, searchFilterCount);
-
-    const groupsTabContent = inviteModal.querySelector('.tab-content.groups')
-
-    groupsTabContent.prepend(search);
-}
-
+// Create a custom groups tab
 async function createGroupsTab() {
     const currentUser = angular.element('body').scope().user;
     
@@ -125,16 +115,20 @@ async function createGroupsTab() {
     // Insert the user tab after the tabs container
     insertAfter(groupsTabContent, tabsContainer);
 
+    // Create each groups list item
     groups.forEach((group) => {
         const groupElement = document.createElement('li');
 
+        // Create avatars list
         const groupAvatars = document.createElement('ul');
         groupAvatars.classList.add('avatars');
 
         const existingMembers = group.members
 
+
         const hasMore = existingMembers.length > 3;
 
+        // Display the first 3 avatars only
         existingMembers.slice(0, 3).forEach((member, index) => {
             const user = getUserFromEmail(member);
             
@@ -168,6 +162,7 @@ async function createGroupsTab() {
             groupAvatars.append(memberAvatar);
         })
 
+        // If there is more than 3 avatars, display a "plus" avatar with a dropdown
         if (hasMore) {
             const moreAvatar = document.createElement('li');
             moreAvatar.classList.add('more');
@@ -184,6 +179,7 @@ async function createGroupsTab() {
             groupAvatars.append(moreAvatar);
         } 
 
+        // Fill the details of the group
         const groupDetail = document.createElement('div');
         groupDetail.classList.add('group-info');
 
@@ -215,6 +211,34 @@ async function createGroupsTab() {
         groupsList.append(groupElement);
     });
 }
+
+// Create a custom search bar for the groups tab
+function createGroupsSearchBar() {
+    const inviteModal = document.querySelector('[inv-modal]');
+    const groupsTabContent = inviteModal.querySelector('.tab-content.groups')
+
+    // Create search container
+    const search = document.createElement('div');
+    search.classList.add('search');
+
+    // Create search input element
+    const searchInput = document.createElement('input');
+    searchInput.setAttribute('type', 'text');
+    searchInput.setAttribute('autocomplete', 'off');
+    searchInput.setAttribute('placeholder', `Search ${groups.length} groups...`);
+
+    // Create search filter count element (ex: 1 result on 4)
+    const searchFilterCount = document.createElement('span');
+    searchFilterCount.classList.add('count');
+
+    searchFilterCount.hidden = true;
+    searchFilterCount.innerHTML = `0/${groups.length}`;
+
+    search.append(searchInput, searchFilterCount);
+
+    groupsTabContent.prepend(search);
+}
+
 
 function getUnselectedCount(groupName) {
     const group = groups.find((g) => g.name === groupName);
@@ -513,6 +537,7 @@ var observer = new MutationObserver(async function (mutations) {
                             }
                         });
 
+                        // Listen to the user list when subtree changed
                         userListObserver.observe(document.querySelector('[inv-modal] .user-list'), {
                             childList: true,
                             subtree: true
