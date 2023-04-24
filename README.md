@@ -1,3 +1,7 @@
+# 👨‍👧‍👧 Invision Assistant
+
+Adds groups to InVision 
+
 ## Getting Started
 
 The idea of this project is to permit groups among invite modale in InVision projects. 
