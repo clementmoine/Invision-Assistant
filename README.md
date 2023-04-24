@@ -1,8 +1,67 @@
 ## Getting Started
 
+The idea of this project is to permit groups among invite modale in InVision projects. 
+
+I developped two methods to achieve this goal:
+- Method #1: Chrome Extension
+- Method #2: Bookmarklet
+
+### Method #1: Chrome Extension
+
+*InVision Assistant*, that's the name of the extension that simply allows you to add a "Group" tab in invite modale :
+
+Users tab             |  Groups tab
+:-------------------------:|:-------------------------:
+![Screenshot of the classic users list of the InVision invite modale located under a "Users" tab.](./Chrome%20Extension/Screenshots/projects.invisionapp.com_d_main_%20(2).png)  |  ![Screenshot of the new "Groups" tab that contains custom groups of actual InVision users.](./Chrome%20Extension/Screenshots/projects.invisionapp.com_d_main_%20(3).png)
+
+You can install the extension from Chrome Web Store or manually from unpacked package.
+
+#### Chrome Web Store 
+
+🚧 Not validated on Chrome Web Store yet. 🏗
+
+#### Manual install
+
+To install an extension that is not validated by Google Chrome Web Store, you need to manually import that extension directly from the files.
+
+```
+git clone https://github.com/clementmoine/invision-invite.git
+```
+
+1. Open your Chrome base browser (ex: Chrome, Brave, Arc ...). 
+2. Go to that URL `chrome://extensions/`.
+3. Enable the developer mode from the top right toggle switch
+4. Click the `Load unpacked` button.
+5. Browse and select the main folder of the extension, the file containing `manifest.json` file.
+
+And ... voilà 🎉
+
+The Chrome extension is now installed and you can manage the group list from the `script.js` file :
+
+```
+const groups = [
+    {
+        name: '👩🏻‍🎨 Hire me',
+        members: [
+            'clement.moine86@gmail.com'
+        ]
+    },
+    {
+        name: '📐 Ask me anything',
+        members: [
+        ]
+    }
+];
+```
+
+NOTE : Do not forget to click the update button from the Chrome Extensions page to handle your changes.
+
+
+### Method #2 : Bookmarklet
+
 The idea of this script is to permit multiple invites on InVision projects on a click. I use it every single day to share new projects to predefined list of people in my company. You simply can use it from the Chrome console by copying the content of `index.js`. In my case I prefer using it with a javascript bookmarklet in Chrome. 
 
-### Create a bookmarklet
+<img width="390" alt="image" src="https://user-images.githubusercontent.com/27948112/234039129-90b30289-1d0c-4743-b611-3d9514b197e6.png">
 
 _Below is an example of how you can install the script in your bookmarks to simply click on that and run the script. Feel free to use this script in the way that suits you best_
 
