@@ -3,8 +3,7 @@
 // Note : The script needs to be injected in the Invision page since we need to access Angular Scope to run genuine inviting actions from custom buttons.
 
 // Groups list with a name and members emails
-const groups = [
-];
+const groups = JSON.parse(sessionStorage.getItem('groups'));
 
 // Function to create an unique alpha-numerical id
 function uuidv4() {
@@ -590,8 +589,10 @@ var observer = new MutationObserver(async function (mutations) {
     }
 });
 
-// Listen to every changes to detect invite modal open
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
-});
+if (groups) {
+    // Listen to every changes to detect invite modal open
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
