@@ -3,7 +3,7 @@
 // Note : The script needs to be injected in the Invision page since we need to access Angular Scope to run genuine inviting actions from custom buttons.
 
 // Groups list with a name and members emails
-const groups = JSON.parse(sessionStorage.getItem('groups'));
+let groups = JSON.parse(sessionStorage.getItem('groups'));
 
 // Function to create an unique alpha-numerical id
 function uuidv4() {
@@ -235,12 +235,6 @@ async function createGroupsTab() {
 
         groupsList.append(groupElement);
     });
-}
-
-// Create a custom search bar for the groups tab
-function createGroupsSearchBar() {
-    const inviteModal = document.querySelector('[inv-modal]');
-    const groupsTabContent = inviteModal.querySelector('.tab-content.groups')
 
     // Create search container
     const search = document.createElement('div');
@@ -263,7 +257,6 @@ function createGroupsSearchBar() {
 
     groupsTabContent.prepend(search);
 }
-
 
 function getUnselectedCount(groupName) {
     const group = groups.find((g) => g.name === groupName);
@@ -434,6 +427,8 @@ function addEventListeners() {
                 return;
             }
 
+            groups = JSON.parse(sessionStorage.getItem('groups'));
+            
             // Change the active tab
             tabs.forEach((t) => t.classList.remove('active'));
             tab.classList.add('active');
@@ -533,6 +528,8 @@ var observer = new MutationObserver(async function (mutations) {
             if (!node.tagName) continue; // not an element
 
             if (node.hasAttribute('inv-modal') && node.hasAttribute('id') && node.getAttribute('id') === 'project_members') {
+                groups = JSON.parse(sessionStorage.getItem('groups'));
+                
                 let alreadyDone = false;
 
                 // Listen the scope of angular to make sure that team members changed
@@ -552,9 +549,6 @@ var observer = new MutationObserver(async function (mutations) {
 
                         // Create group tab
                         createGroupsTab();
-        
-                        // Add search bar
-                        createGroupsSearchBar();
 
                         // Another tricky part 
                         // We want to add group name to every Invision users 
@@ -589,10 +583,16 @@ var observer = new MutationObserver(async function (mutations) {
     }
 });
 
-if (groups) {
-    // Listen to every changes to detect invite modal open
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
-}
+// Listen to every changes to detect invite modal open
+observer.observe(document.body, {
+    childList: true,
+    subtree: true
+});
+
+window.addEventListener('storage', function(event) {  
+    groups = JSON.parse(sessionStorage.getItem('groups'));
+
+    if (document.querySelector('[inv-modal]')) {
+        angular.element('[inv-modal]').scope().closeModalWindow();
+    }
+});
