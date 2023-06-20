@@ -535,7 +535,7 @@ var observer = new MutationObserver(async function (mutations) {
                 // Listen the scope of angular to make sure that team members changed
                 angular.element('[inv-modal]').scope().$watch(function(scope) {
 
-                    if (scope.teamMembers?.length && !alreadyDone) {
+                    if (scope.teamMembers?.length && !alreadyDone && groups.length > 0) {
                         alreadyDone = true;
 
                         // Create the tabs container
