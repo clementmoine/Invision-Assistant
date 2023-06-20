@@ -1,7 +1,7 @@
 {
   "name": "InVision Assistant",
   "description": "Assistant Invision pour effectuer des tâches rapides",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "manifest_version": 3,
   "content_scripts": [
     {

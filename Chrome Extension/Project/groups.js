@@ -46,7 +46,10 @@ async function invite(emails, reverse = false) {
 
         const user = getUserFromEmail(email);
 
+        // If there is no associated user we invite the user by email (with , separator for each)
         if (!user) {
+            inviteModalScope.newusers.email = (inviteModalScope.newusers.email || '').split(',').filter((email) => email.length).concat(email).join(',')
+
             return;
         }
 
