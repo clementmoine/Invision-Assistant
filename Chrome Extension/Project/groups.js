@@ -3,599 +3,690 @@
 // Note : The script needs to be injected in the Invision page since we need to access Angular Scope to run genuine inviting actions from custom buttons.
 
 // Groups list with a name and members emails
-let groups = JSON.parse(sessionStorage.getItem('groups'));
+let groups = JSON.parse(sessionStorage.getItem("groups"));
+
+// Custom log function
+function log(...msg) {
+  console.log(
+    `%cInvision Assistant%c ${msg.join(" ")}`,
+    "display: inline-block ; background-color: #e0005a ; color: #ffffff ; font-weight: bold ; padding: 3px 7px 3px 7px ; border-radius: 3px 3px 3px 3px ;",
+    ""
+  );
+}
 
 // Function to create an unique alpha-numerical id
 function uuidv4() {
-  return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+    (
+      c ^
+      (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+    ).toString(16)
   );
 }
 
 // Insert after function since insertBefore is the only natively implemented JS insert function
 function insertAfter(newNode, existingNode) {
-    existingNode.parentNode.insertBefore(newNode, existingNode.nextSibling);
+  existingNode.parentNode.insertBefore(newNode, existingNode.nextSibling);
 }
-
 
 // Get a user profile from his mail through the Angular teamMembers scope
 function getUserFromEmail(email) {
-    // We use Angular public scope that contains every data of the page 
-    const inviteModalScope = angular.element('[inv-modal]').scope();
-    const currentUser = angular.element('body').scope().user;
+  // We use Angular public scope that contains every data of the page
+  const inviteModalScope = angular.element("[inv-modal]").scope();
+  const currentUser = angular.element("body").scope().user;
 
-    return currentUser.email === email ? currentUser : inviteModalScope.teamMembers.find((m) => m.email === email);
+  return currentUser.email === email
+    ? currentUser
+    : inviteModalScope.teamMembers.find((m) => m.email === email);
 }
 
 // Identify a user to be the project owner
 function isProjectOwner(email) {
-    return angular.element('.project').scope()?.projectOwner?.email === email
+  return angular.element(".project").scope()?.projectOwner?.email === email;
 }
 
 // Select users from emails to make them invited to the current project
 async function invite(emails, reverse = false) {
-    const inviteModalScope = angular.element('[inv-modal]').scope();
-    const currentUser = angular.element('body').scope().user;
+  const inviteModalScope = angular.element("[inv-modal]").scope();
+  const currentUser = angular.element("body").scope().user;
 
-    // For each users check if it is a project member
-    // In reverse mode we invite only the given emails and remove the rest
-    emails.forEach((email) => {
-        if (currentUser.email === email) {
-            return;
-        }
+  // For each users check if it is a project member
+  // In reverse mode we invite only the given emails and remove the rest
+  emails.forEach((email) => {
+    if (currentUser.email === email) {
+      return;
+    }
 
-        const user = getUserFromEmail(email);
+    const user = getUserFromEmail(email);
 
-        // If there is no associated user we invite the user by email (with , separator for each)
-        if (!user) {
-            inviteModalScope.newusers.email = (inviteModalScope.newusers.email || '').split(',').filter((email) => email.length).concat(email).join(',')
+    // If there is no associated user we invite the user by email (with , separator for each)
+    if (!user) {
+      inviteModalScope.newusers.email = (inviteModalScope.newusers.email || "")
+        .split(",")
+        .filter((email) => email.length)
+        .concat(email)
+        .join(",");
 
-            return;
-        }
+      return;
+    }
 
-        if ((!reverse && !user.isSelectedForProject) || (reverse && user.isSelectedForProject)) {
-            inviteModalScope.toggleTeamMemberSelection(user);
-        }
-    })
+    if (
+      (!reverse && !user.isSelectedForProject) ||
+      (reverse && user.isSelectedForProject)
+    ) {
+      inviteModalScope.toggleTeamMemberSelection(user);
+    }
+  });
 
-    // Apply Angular scope changes to reflect data changes on the page
-    inviteModalScope.$apply();
+  // Apply Angular scope changes to reflect data changes on the page
+  inviteModalScope.$apply();
+
+  log("Successfully sent invites");
 }
 
 // Add the group name information in the display of the genuine InVision user list
 function addGroupNameToUsers() {
-    const inviteModal = document.querySelector('[inv-modal]');
-    const usersList = inviteModal.querySelector('.user-list');
+  const inviteModal = document.querySelector("[inv-modal]");
+  const usersList = inviteModal.querySelector(".user-list");
 
+  // Add the group name next to the user name
+  const usersElements = usersList.querySelectorAll(
+    ".user-container:not(.processed)"
+  );
 
-    // Add the group name next to the user name
-    const usersElements = usersList.querySelectorAll('.user-container:not(.processed)');
+  usersElements.forEach((userElement) => {
+    userElement.classList.add("processed");
 
-    usersElements.forEach((userElement) => {
-        userElement.classList.add('processed');
+    // Get email of the user from the DOM element to identify him in our groups
+    const details = userElement.querySelector(".user-info p").innerText;
+    const email = details
+      .split("•")
+      .find((p) => p.includes("@"))
+      ?.trim();
 
-        // Get email of the user from the DOM element to identify him in our groups
-        const details = userElement.querySelector('.user-info p').innerText;
-        const email = details.split('•').find((p) => p.includes('@')).trim();
+    if (!email) {
+      return;
+    }
 
-        // Retrieve the user from the DOM email
-        const user = getUserFromEmail(email);
-        const group = groups.find((group) => group.members.includes(email));
+    // Retrieve the user from the DOM email
+    const user = getUserFromEmail(email);
+    const group = groups.find((group) => group.members.includes(email));
 
-        if (!user || !group) {
-            return;
-        }
+    if (!user || !group) {
+      return;
+    }
 
-        // Append the group name
-        userElement.querySelector('h2').innerHTML = `${user.name} • ${group.name}`;
-    });
+    // Append the group name
+    userElement.querySelector("h2").innerHTML = `${user.name} • ${group.name}`;
+  });
 }
 
 // Move the save button after the tabs content to make it visible and usable for every tabs (group tab, user tab)
 function moveSaveBtn() {
-    const inviteModal = document.querySelector('[inv-modal]');
-    const actions = inviteModal.querySelector('.actions');
-    const usersTabContent = inviteModal.querySelector('.tab-content.users');
-    
-    // Insert the button after the tab contents
-    insertAfter(actions, usersTabContent)
+  const inviteModal = document.querySelector("[inv-modal]");
+  const actions = inviteModal.querySelector(".actions");
+  const usersTabContent = inviteModal.querySelector(".tab-content.users");
+
+  // Insert the button after the tab contents
+  insertAfter(actions, usersTabContent);
 }
 
 // Create a custom groups tab
 async function createGroupsTab() {
-    const currentUser = angular.element('body').scope().user;
-    
-    const inviteModal = document.querySelector('[inv-modal]');
-    const tabsContainer = inviteModal.querySelector('.tabs');
+  const currentUser = angular.element("body").scope().user;
 
-    // Create a groups tab
-    const groupsTabContent = document.createElement('div');
+  const inviteModal = document.querySelector("[inv-modal]");
+  const tabsContainer = inviteModal.querySelector(".tabs");
 
-    groupsTabContent.classList.add('groups', 'tab-content');
+  // Create a groups tab
+  const groupsTabContent = document.createElement("div");
 
-    const groupsContent = document.createElement('div');
+  groupsTabContent.classList.add("groups", "tab-content");
 
-    groupsContent.classList.add('content');
+  const groupsContent = document.createElement("div");
 
-    // Create the list of groups with avatars
-    const groupsList = document.createElement('ul');
+  groupsContent.classList.add("content");
 
-    groupsList.classList.add('groups-list');
+  // Create the list of groups with avatars
+  const groupsList = document.createElement("ul");
 
-    groupsContent.append(groupsList);
+  groupsList.classList.add("groups-list");
 
-    groupsTabContent.append(groupsContent);
+  groupsContent.append(groupsList);
 
-    // Insert the user tab after the tabs container
-    insertAfter(groupsTabContent, tabsContainer);
+  groupsTabContent.append(groupsContent);
 
-    // Create each groups list item
-    groups.forEach((group) => {
-        const groupElement = document.createElement('li');
+  // Insert the user tab after the tabs container
+  insertAfter(groupsTabContent, tabsContainer);
 
-        // Create avatars list
-        const groupAvatars = document.createElement('ul');
-        groupAvatars.classList.add('avatars');
+  // Create each groups list item
+  groups.forEach((group) => {
+    const groupElement = document.createElement("li");
 
-        const existingMembers = group.members
+    // Create avatars list
+    const groupAvatars = document.createElement("ul");
+    groupAvatars.classList.add("avatars");
 
+    const existingMembers = group.members;
 
-        const hasMore = existingMembers.length > 3;
+    const hasMore = existingMembers.length > 3;
 
-        // Display the first 3 avatars only
-        existingMembers.slice(0, 3).forEach((member, index) => {
-            const user = getUserFromEmail(member);
-            
-            if (hasMore && index === 3) {
-                return;
-            }
+    // Display the first 3 avatars only
+    existingMembers.slice(0, 3).forEach((member, index) => {
+      const user = getUserFromEmail(member);
 
-            // Identify the user to be "me"
-            const username = user ? (member === currentUser.email ? `${user.name} (moi)` : user.name) : member;
+      if (hasMore && index === 3) {
+        return;
+      }
 
-            // Display a check for already member users
-            const statusIcon = isProjectOwner(member) ? '👑' : user?.isProjectMember || member === currentUser.email ? '✅' : '⛔️';
-                
-            const memberAvatar = document.createElement('li');
-            memberAvatar.setAttribute('id', uuidv4());
-            memberAvatar.setAttribute('title', `${statusIcon} ${username}`);
+      // Identify the user to be "me"
+      const username = user
+        ? member === currentUser.email
+          ? `${user.name} (moi)`
+          : user.name
+        : member;
 
-            if (!user?.hasSystemAvatar && user?.avatarUrl) {
-                const memberImg = document.createElement('img');
+      // Display a check for already member users
+      const statusIcon = isProjectOwner(member)
+        ? "👑"
+        : user?.isProjectMember || member === currentUser.email
+        ? "✅"
+        : "⛔️";
 
-                memberImg.setAttribute('src', user.avatarUrl);
+      const memberAvatar = document.createElement("li");
+      memberAvatar.setAttribute("id", uuidv4());
+      memberAvatar.setAttribute("title", `${statusIcon} ${username}`);
 
-                memberAvatar.append(memberImg);
-            } else {
-                const memberInitials = document.createElement('span');
+      if (!user?.hasSystemAvatar && user?.avatarUrl) {
+        const memberImg = document.createElement("img");
 
-                memberInitials.innerHTML = user?.initials || '?';
-                memberInitials.classList.add('initials');
+        memberImg.setAttribute("src", user.avatarUrl);
 
-                memberAvatar.append(memberInitials)
-            }
-            
-            if (user?.isProjectMember) {
-                memberAvatar.classList.add('is-member');
-            }
+        memberAvatar.append(memberImg);
+      } else {
+        const memberInitials = document.createElement("span");
 
-            groupAvatars.append(memberAvatar);
-        })
+        memberInitials.innerHTML = user?.initials || "?";
+        memberInitials.classList.add("initials");
 
-        // If there is more than 3 avatars, display a "plus" avatar with a dropdown
-        if (hasMore) {
-            const otherMembers = existingMembers.slice(3, existingMembers.length);
-            
-            const moreAvatar = document.createElement('li');
-            moreAvatar.classList.add('more');
-            moreAvatar.innerHTML = `+${otherMembers.length}`;
+        memberAvatar.append(memberInitials);
+      }
 
-            // Prepare tooltip/dropdown to display all users
-            moreAvatar.setAttribute('id', uuidv4());
-            moreAvatar.setAttribute('title', otherMembers.map((member) => {
-                const user = getUserFromEmail(member);
+      if (user?.isProjectMember) {
+        memberAvatar.classList.add("is-member");
+      }
 
-                // Identify the user to be "me"
-                const username = user ? (member === currentUser.email ? `${user.name} (moi)` : user.name) : member;
-
-                // Display a check for already member users (a crown for the owner since he can't be in or out, he is the owner)
-                const statusIcon = isProjectOwner(member) ? '👑' : user?.isProjectMember || member === currentUser.email ? '✅' : '⛔️';
-                
-                return (`${statusIcon} ${username}`);
-            }).join('\n'));
-
-            groupAvatars.append(moreAvatar);
-        }
-
-        // Fill the details of the group
-        const groupDetail = document.createElement('div');
-        groupDetail.classList.add('group-info');
-
-        const groupTitle = document.createElement('h2');
-        groupTitle.innerHTML = group.name;
-
-        const groupDescription = document.createElement('p');
-        groupDescription.innerHTML = `${group.members.length} utilisateurs`;
-
-        const projectMembersCount = getProjectMembersCount(group.name);
-
-        if (projectMembersCount != group.members.length) {
-            groupDescription.innerHTML += ` • ${projectMembersCount} sur ${group.members.length} ajoutés`;
-        } else {
-            groupDescription.innerHTML += ` • Tous ajoutés`;
-        }
-
-        const groupButton = document.createElement('button');
-        
-        groupButton.setAttribute('type', 'button');
-        groupButton.setAttribute('for', group.name);
-
-        groupButton.innerHTML = getUnselectedCount(group.name) ? 'Add' : 'Remove';
-
-        groupDetail.append(groupTitle, groupDescription);
-
-        groupElement.append(groupDetail, groupAvatars, groupButton);
-
-        groupsList.append(groupElement);
+      groupAvatars.append(memberAvatar);
     });
 
-    // Create search container
-    const search = document.createElement('div');
-    search.classList.add('search');
+    // If there is more than 3 avatars, display a "plus" avatar with a dropdown
+    if (hasMore) {
+      const otherMembers = existingMembers.slice(3, existingMembers.length);
 
-    // Create search input element
-    const searchInput = document.createElement('input');
-    searchInput.setAttribute('type', 'text');
-    searchInput.setAttribute('autocomplete', 'off');
-    searchInput.setAttribute('placeholder', `Search ${groups.length} groups...`);
+      const moreAvatar = document.createElement("li");
+      moreAvatar.classList.add("more");
+      moreAvatar.innerHTML = `+${otherMembers.length}`;
 
-    // Create search filter count element (ex: 1 result on 4)
-    const searchFilterCount = document.createElement('span');
-    searchFilterCount.classList.add('count');
+      // Prepare tooltip/dropdown to display all users
+      moreAvatar.setAttribute("id", uuidv4());
+      moreAvatar.setAttribute(
+        "title",
+        otherMembers
+          .map((member) => {
+            const user = getUserFromEmail(member);
 
-    searchFilterCount.hidden = true;
-    searchFilterCount.innerHTML = `0/${groups.length}`;
+            // Identify the user to be "me"
+            const username = user
+              ? member === currentUser.email
+                ? `${user.name} (moi)`
+                : user.name
+              : member;
 
-    search.append(searchInput, searchFilterCount);
+            // Display a check for already member users (a crown for the owner since he can't be in or out, he is the owner)
+            const statusIcon = isProjectOwner(member)
+              ? "👑"
+              : user?.isProjectMember || member === currentUser.email
+              ? "✅"
+              : "⛔️";
 
-    groupsTabContent.prepend(search);
+            return `${statusIcon} ${username}`;
+          })
+          .join("\n")
+      );
+
+      groupAvatars.append(moreAvatar);
+    }
+
+    // Fill the details of the group
+    const groupDetail = document.createElement("div");
+    groupDetail.classList.add("group-info");
+
+    const groupTitle = document.createElement("h2");
+    groupTitle.innerHTML = group.name;
+
+    const groupDescription = document.createElement("p");
+    groupDescription.innerHTML = `${group.members.length} utilisateurs`;
+
+    const projectMembersCount = getProjectMembersCount(group.name);
+
+    if (projectMembersCount != group.members.length) {
+      groupDescription.innerHTML += ` • ${projectMembersCount} sur ${group.members.length} ajoutés`;
+    } else {
+      groupDescription.innerHTML += ` • Tous ajoutés`;
+    }
+
+    const groupButton = document.createElement("button");
+
+    groupButton.setAttribute("type", "button");
+    groupButton.setAttribute("for", group.name);
+
+    groupButton.innerHTML = getUnselectedCount(group.name) ? "Add" : "Remove";
+
+    groupDetail.append(groupTitle, groupDescription);
+
+    groupElement.append(groupDetail, groupAvatars, groupButton);
+
+    groupsList.append(groupElement);
+  });
+
+  // Create search container
+  const search = document.createElement("div");
+  search.classList.add("search");
+
+  // Create search input element
+  const searchInput = document.createElement("input");
+  searchInput.setAttribute("type", "text");
+  searchInput.setAttribute("autocomplete", "off");
+  searchInput.setAttribute("placeholder", `Search ${groups.length} groups...`);
+
+  // Create search filter count element (ex: 1 result on 4)
+  const searchFilterCount = document.createElement("span");
+  searchFilterCount.classList.add("count");
+
+  searchFilterCount.hidden = true;
+  searchFilterCount.innerHTML = `0/${groups.length}`;
+
+  search.append(searchInput, searchFilterCount);
+
+  groupsTabContent.prepend(search);
 }
 
 function getUnselectedCount(groupName) {
-    const group = groups.find((g) => g.name === groupName);
+  const group = groups.find((g) => g.name === groupName);
 
-    const currentUser = angular.element('body').scope().user;
+  const currentUser = angular.element("body").scope().user;
 
-    // Check some members are invited
-    const unselected = group.members.filter((member) => {
-        if (currentUser.email === member) {
-            return;
-        }
-        
-        return !getUserFromEmail(member)?.isSelectedForProject
-     });
+  // Check some members are invited
+  const unselected = group.members.filter((member) => {
+    if (currentUser.email === member) {
+      return;
+    }
 
-    return unselected.length;
+    return !getUserFromEmail(member)?.isSelectedForProject;
+  });
+
+  return unselected.length;
 }
 
 function getProjectMembersCount(groupName) {
-    const group = groups.find((g) => g.name === groupName);
+  const group = groups.find((g) => g.name === groupName);
 
-    const currentUser = angular.element('body').scope().user;
+  const currentUser = angular.element("body").scope().user;
 
-    // Get every members of a project
-    const members = group.members.filter((member) => {
-        if (currentUser.email === member) {
-            return true;
-        }
-        
-        return getUserFromEmail(member)?.isProjectMember
-     });
+  // Get every members of a project
+  const members = group.members.filter((member) => {
+    if (currentUser.email === member) {
+      return true;
+    }
 
-    return members.length;
+    return getUserFromEmail(member)?.isProjectMember;
+  });
+
+  return members.length;
 }
 
 function createUserTab() {
-    const inviteModal = document.querySelector('[inv-modal]');
+  const inviteModal = document.querySelector("[inv-modal]");
 
-    const users = inviteModal.querySelector('.content');
-    const searchBar = inviteModal.querySelector('.search');
-    const tabsContainer = inviteModal.querySelector('.tabs');
+  const users = inviteModal.querySelector(".content");
+  const searchBar = inviteModal.querySelector(".search");
+  const tabsContainer = inviteModal.querySelector(".tabs");
 
-    // Create a user tab
-    const userTabContent = document.createElement('div');
-    
-    userTabContent.classList.add('users', 'tab-content', 'active');
+  // Create a user tab
+  const userTabContent = document.createElement("div");
 
-    // Insert the user tab after the tabs container
-    insertAfter(userTabContent, tabsContainer);
+  userTabContent.classList.add("users", "tab-content", "active");
 
-    // Move the search bar and the list of users into a container to swap between tabs
-    userTabContent.append(searchBar);
-    userTabContent.append(users);
+  // Insert the user tab after the tabs container
+  insertAfter(userTabContent, tabsContainer);
+
+  // Move the search bar and the list of users into a container to swap between tabs
+  userTabContent.append(searchBar);
+  userTabContent.append(users);
 }
 
-
 function createTabsContainer() {
-    const inviteModal = document.querySelector('[inv-modal]');
-    const modalTitle = inviteModal.querySelector('h1');
+  const inviteModal = document.querySelector("[inv-modal]");
+  const modalTitle = inviteModal.querySelector("h1");
 
-    // Create a tab navigation
-    const tabsContainer = document.createElement("ul");
+  // Create a tab navigation
+  const tabsContainer = document.createElement("ul");
 
-    tabsContainer.classList.add('tabs');
+  tabsContainer.classList.add("tabs");
 
-    // Users tab
-    const userTab = document.createElement('li');
-    const userTabAction = document.createElement('a');
+  // Users tab
+  const userTab = document.createElement("li");
+  const userTabAction = document.createElement("a");
 
-    userTabAction.setAttribute('for', 'users');
-    userTabAction.classList.add('active');
-    userTabAction.innerHTML = 'Utilisateurs';
+  userTabAction.setAttribute("for", "users");
+  userTabAction.classList.add("active");
+  userTabAction.innerHTML = "Utilisateurs";
 
-    userTab.append(userTabAction);
+  userTab.append(userTabAction);
 
-    // Groups tab
-    const groupsTab = document.createElement('li');
-    const groupsTabAction = document.createElement('a');
+  // Groups tab
+  const groupsTab = document.createElement("li");
+  const groupsTabAction = document.createElement("a");
 
-    groupsTabAction.setAttribute('for', 'groups');
-    groupsTabAction.innerHTML = 'Groupes';
+  groupsTabAction.setAttribute("for", "groups");
+  groupsTabAction.innerHTML = "Groupes";
 
-    groupsTab.append(groupsTabAction);
+  groupsTab.append(groupsTabAction);
 
-    // Append user and groups tabs to the tabs container
-    tabsContainer.append(userTab);
-    tabsContainer.append(groupsTab);
+  // Append user and groups tabs to the tabs container
+  tabsContainer.append(userTab);
+  tabsContainer.append(groupsTab);
 
-    // Insert the tabs container into the modal (right before the search bar).
-    insertAfter(tabsContainer, modalTitle);
+  // Insert the tabs container into the modal (right before the search bar).
+  insertAfter(tabsContainer, modalTitle);
 
-    inviteModal.classList.add('is-processed');
+  inviteModal.classList.add("is-processed");
 }
 
 // Create a tooltip from the title of the given element id
 function createTooltip(id) {
-    const target = document.getElementById(id);
+  const target = document.getElementById(id);
 
-    if (!target) {
-        return;
-    }
+  if (!target) {
+    return;
+  }
 
-    const title = target.getAttribute('title');
+  const title = target.getAttribute("title");
 
-    if (title?.trim() == '') {
-        return;
-    }
+  if (title?.trim() == "") {
+    return;
+  }
 
-    target.setAttribute('data-title', title);
-    target.removeAttribute('title');
+  target.setAttribute("data-title", title);
+  target.removeAttribute("title");
 
-    // Tooltip HTML structure
-    const tooltip = document.createElement('div');
-    tooltip.classList.add('tooltip', 'fade', 'bottom', 'in');
-    tooltip.setAttribute('for', id);
+  // Tooltip HTML structure
+  const tooltip = document.createElement("div");
+  tooltip.classList.add("tooltip", "fade", "bottom", "in");
+  tooltip.setAttribute("for", id);
 
-    const tooltipArrow = document.createElement('div');
-    tooltipArrow.classList.add('tooltip-arrow');
+  const tooltipArrow = document.createElement("div");
+  tooltipArrow.classList.add("tooltip-arrow");
 
-    const tooltipInner = document.createElement('div');
-    tooltipInner.classList.add('tooltip-inner');
-    tooltipInner.innerText = title;
+  const tooltipInner = document.createElement("div");
+  tooltipInner.classList.add("tooltip-inner");
+  tooltipInner.innerText = title;
 
-    tooltip.append(tooltipArrow, tooltipInner);
+  tooltip.append(tooltipArrow, tooltipInner);
 
-    tooltip.style.display = 'block';
-    tooltip.style.position = 'fixed';
+  tooltip.style.display = "block";
+  tooltip.style.position = "fixed";
 
-    document.body.append(tooltip);
+  document.body.append(tooltip);
 
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    
-    tooltip.style.top = `${targetRect.top + targetRect.height}px`;
-    tooltip.style.left = `${targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2)}px`;
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+
+  tooltip.style.top = `${targetRect.top + targetRect.height}px`;
+  tooltip.style.left = `${
+    targetRect.left + targetRect.width / 2 - tooltipRect.width / 2
+  }px`;
 }
 
 function destroyTooltip(id) {
-    const target = document.getElementById(id);
+  const target = document.getElementById(id);
 
-    const tooltip = document.querySelector(`.tooltip[for="${id}"]`);
+  const tooltip = document.querySelector(`.tooltip[for="${id}"]`);
 
-    if (!tooltip) {
-        return;
-    }
+  if (!tooltip) {
+    return;
+  }
 
-    if (target.hasAttribute('data-title') && !target.hasAttribute('title')) {
-        const title = target.getAttribute('data-title');
+  if (target.hasAttribute("data-title") && !target.hasAttribute("title")) {
+    const title = target.getAttribute("data-title");
 
-        target.setAttribute('title', title);
-        target.removeAttribute('data-title');
-    }
+    target.setAttribute("title", title);
+    target.removeAttribute("data-title");
+  }
 
-    tooltip.remove();
+  tooltip.remove();
 }
 
 // Manage every custom listeners on the page (tooltips, buttons clicks)
 function addEventListeners() {
-    const inviteModal = document.querySelector('[inv-modal]');
+  const inviteModal = document.querySelector("[inv-modal]");
 
-    const tabsContent = inviteModal.querySelectorAll('.tab-content');
-    const tabs = inviteModal.querySelectorAll('.tabs li > a');
+  const tabsContent = inviteModal.querySelectorAll(".tab-content");
+  const tabs = inviteModal.querySelectorAll(".tabs li > a");
 
-    // Event listeners
-    tabs.forEach((tab) => {
-        tab.addEventListener('click', (e) => { 
-            if (e.currentTarget.classList.contains('active')) {
-                return;
-            }
+  // Event listeners
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", (e) => {
+      if (e.currentTarget.classList.contains("active")) {
+        return;
+      }
 
-            groups = JSON.parse(sessionStorage.getItem('groups'));
-            
-            // Change the active tab
-            tabs.forEach((t) => t.classList.remove('active'));
-            tab.classList.add('active');
+      groups = JSON.parse(sessionStorage.getItem("groups"));
 
-            // Display the tab content
-            tabsContent.forEach((t) => {
-                if (t.classList.contains(tab.getAttribute('for'))) {
-                    t.classList.add('active');
+      // Change the active tab
+      tabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
 
-                    return;
-                }
+      // Display the tab content
+      tabsContent.forEach((t) => {
+        if (t.classList.contains(tab.getAttribute("for"))) {
+          t.classList.add("active");
 
-                t.classList.remove('active');
-            });
+          return;
+        }
 
+        t.classList.remove("active");
+      });
 
-            // Users tab
-            if (tab.classList.contains('users')) {
-                inviteModal.querySelector('.tab-content.users').classList.add('active');
-            } 
-            
-            // Groups tab
-            if (tab.classList.contains('groups')) {
-                inviteModal.querySelector('.tab-content.groups').classList.add('active');
-            }
-        })
+      // Users tab
+      if (tab.classList.contains("users")) {
+        inviteModal.querySelector(".tab-content.users").classList.add("active");
+      }
+
+      // Groups tab
+      if (tab.classList.contains("groups")) {
+        inviteModal
+          .querySelector(".tab-content.groups")
+          .classList.add("active");
+      }
+    });
+  });
+
+  // Create add / remove buttons for each groups
+  const btns = inviteModal.querySelectorAll(".groups-list > li > button");
+
+  btns.forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const group = groups.find((g) => g.name === btn.getAttribute("for"));
+
+      await invite(group.members, btn.innerHTML === "Remove");
+
+      btn.innerHTML = getUnselectedCount(group.name) ? "Add" : "Remove";
+    });
+  });
+
+  // Manager custom search bar on the groups tab
+  const searchBar = inviteModal.querySelector(".tab-content.groups .search");
+
+  searchBar.addEventListener("input", (e) => {
+    // Show every groups
+    inviteModal.querySelectorAll(".groups-list li").forEach((li) => {
+      li.hidden = false;
     });
 
-    // Create add / remove buttons for each groups
-    const btns = inviteModal.querySelectorAll('.groups-list > li > button');
+    const value = e.target.value;
 
-    btns.forEach((btn) => {
-        btn.addEventListener('click', async (e) => { 
-            const group = groups.find((g) => g.name === btn.getAttribute('for'));
+    const countElement = searchBar.querySelector(".count");
 
-            await invite(group.members, btn.innerHTML === 'Remove');
+    // Filter groups to find groups that doesn't match the search
+    const mismatchGroups = groups.filter((group) => {
+      const matchesLabel = group.name.match(new RegExp(value, "gi"));
+      const matchesUser = group.members.some((member) => {
+        const user = getUserFromEmail(member);
 
-            btn.innerHTML = getUnselectedCount(group.name) ? 'Add' : 'Remove';
-        });
+        return (
+          user.email.match(new RegExp(value, "gi")) ||
+          user.name.match(new RegExp(value, "gi"))
+        );
+      });
+
+      return !matchesLabel && !matchesUser;
     });
 
-    // Manager custom search bar on the groups tab
-    const searchBar = inviteModal.querySelector('.tab-content.groups .search');
+    countElement.hidden = !value?.length;
+    countElement.innerHTML = `${groups.length - mismatchGroups.length}/${
+      groups.length
+    }`;
 
-    searchBar.addEventListener('input', (e) => {
-        // Show every groups
-        inviteModal.querySelectorAll('.groups-list li').forEach((li) => { li.hidden = false });
-
-        const value = e.target.value;
-
-        const countElement = searchBar.querySelector('.count');
-
-        // Filter groups to find groups that doesn't match the search
-        const mismatchGroups = groups.filter((group) => {
-            const matchesLabel = group.name.match(new RegExp(value, 'gi'));
-            const matchesUser = group.members.some((member) => {
-                const user = getUserFromEmail(member);
-
-                return user.email.match(new RegExp(value, 'gi')) || user.name.match(new RegExp(value, 'gi'))
-            })
-
-            return !matchesLabel && !matchesUser;
-        });
-
-        countElement.hidden = !value?.length;
-        countElement.innerHTML = `${groups.length - mismatchGroups.length}/${groups.length}`;
-
-        mismatchGroups.forEach((group) => {
-            inviteModal.querySelector(`.groups-list li:has(button[for="${group.name}"])`).hidden = true;
-        })
-    })
-
-    // Manage avatars tooltips
-    const avatars = inviteModal.querySelectorAll('.groups-list > li > .avatars > li');
-
-    avatars.forEach((avatar) => {
-        avatar.addEventListener('mouseenter', (e) => {
-            const id = e.currentTarget.getAttribute('id');
-
-            createTooltip(id);
-        })
-
-        avatar.addEventListener('mouseleave', (e) => {
-            const id = e.currentTarget.getAttribute('id');
-
-            destroyTooltip(id);
-        })
+    mismatchGroups.forEach((group) => {
+      inviteModal.querySelector(
+        `.groups-list li:has(button[for="${group.name}"])`
+      ).hidden = true;
     });
+  });
+
+  // Manage avatars tooltips
+  const avatars = inviteModal.querySelectorAll(
+    ".groups-list > li > .avatars > li"
+  );
+
+  avatars.forEach((avatar) => {
+    avatar.addEventListener("mouseenter", (e) => {
+      const id = e.currentTarget.getAttribute("id");
+
+      createTooltip(id);
+    });
+
+    avatar.addEventListener("mouseleave", (e) => {
+      const id = e.currentTarget.getAttribute("id");
+
+      destroyTooltip(id);
+    });
+  });
 }
 
 // Tricky part :
 // We need to detect the opening of the [inv-modal] to append our custom elements (modal is inserted in the DOM on demand)
 // As we move existing parts of Invision layout for the purpose of the plugin, since the modal is destroyed this needs to be done every opening.
 var observer = new MutationObserver(async function (mutations) {
-    for (const { addedNodes } of mutations) {
-        for (const node of addedNodes) {
-            if (!node.tagName) continue; // not an element
+  for (const { addedNodes } of mutations) {
+    for (const node of addedNodes) {
+      if (!node.tagName) continue; // not an element
 
-            if (node.hasAttribute('inv-modal') && node.hasAttribute('id') && node.getAttribute('id') === 'project_members') {
-                groups = JSON.parse(sessionStorage.getItem('groups'));
-                
-                let alreadyDone = false;
+      if (
+        node.hasAttribute("inv-modal") &&
+        node.hasAttribute("id") &&
+        node.getAttribute("id") === "project_members"
+      ) {
+        groups = JSON.parse(sessionStorage.getItem("groups"));
 
-                // Listen the scope of angular to make sure that team members changed
-                angular.element('[inv-modal]').scope().$watch(function(scope) {
+        let alreadyDone = false;
 
-                    if (scope.teamMembers?.length && !alreadyDone && groups.length > 0) {
-                        alreadyDone = true;
+        // Listen the scope of angular to make sure that team members changed
+        angular
+          .element("[inv-modal]")
+          .scope()
+          .$watch(function (scope) {
+            if (
+              scope.teamMembers?.length &&
+              !alreadyDone &&
+              groups.length > 0
+            ) {
+              alreadyDone = true;
 
-                        // Create the tabs container
-                        createTabsContainer();
+              // Create the tabs container
+              createTabsContainer();
 
-                        // Create user tab
-                        createUserTab();
+              // Create user tab
+              createUserTab();
 
-                        // Move the save button
-                        moveSaveBtn();
+              // Move the save button
+              moveSaveBtn();
 
-                        // Create group tab
-                        createGroupsTab();
+              // Create group tab
+              createGroupsTab();
 
-                        // Another tricky part 
-                        // We want to add group name to every Invision users 
-                        // Since the list of the Invision users is dynamic and "virtualized" from Invision itself 
-                        // We need to make sure that every scroll revealing a new user is properly processed so ... we listen to children changes
-                        // Every time a new user is added we add him the corresponding group name (if it exists obviously) 
-                        const userListObserver = new MutationObserver(async function (mutations) {
-                            for (const { addedNodes } of mutations) {
-                                for (const node of addedNodes) {
-                                    if (!node.tagName) continue; // not an element
+              // Another tricky part
+              // We want to add group name to every Invision users
+              // Since the list of the Invision users is dynamic and "virtualized" from Invision itself
+              // We need to make sure that every scroll revealing a new user is properly processed so ... we listen to children changes
+              // Every time a new user is added we add him the corresponding group name (if it exists obviously)
+              const userListObserver = new MutationObserver(async function (
+                mutations
+              ) {
+                for (const { addedNodes } of mutations) {
+                  for (const node of addedNodes) {
+                    if (!node.tagName) continue; // not an element
 
-                                    if (node.classList.contains('user-container')) {
-                                        // Add group name to users
-                                        addGroupNameToUsers();
-                                    }
-                                }
-                            }
-                        });
+                    if (node.classList.contains("user-container")) {
+                      // Add group name to users
+                      addGroupNameToUsers();
+                    }
+                  }
+                }
+              });
 
-                        // Listen to the user list when subtree changed
-                        userListObserver.observe(document.querySelector('[inv-modal] .user-list'), {
-                            childList: true,
-                            subtree: true
-                        });
-        
-                        // Add event listeners
-                        addEventListeners();
-                    } 
-                });
+              // Listen to the user list when subtree changed
+              userListObserver.observe(
+                document.querySelector("[inv-modal] .user-list"),
+                {
+                  childList: true,
+                  subtree: true,
+                }
+              );
+
+              // Add event listeners
+              addEventListeners();
+
+              log("Groups properly added to invite modal ready to be used");
             }
-        }
+          });
+      }
     }
+  }
 });
 
 // Listen to every changes to detect invite modal open
 observer.observe(document.body, {
-    childList: true,
-    subtree: true
+  childList: true,
+  subtree: true,
 });
 
-window.addEventListener('storage', function(event) {  
-    groups = JSON.parse(sessionStorage.getItem('groups'));
+window.addEventListener("storage", function (event) {
+  if (
+    document.querySelector("[inv-modal]") &&
+    Array.isArray(event?.detail?.groups)
+  ) {
+    // Close the modale
+    angular.element("[inv-modal]").scope().closeModalWindow();
 
-    if (document.querySelector('[inv-modal]')) {
-        angular.element('[inv-modal]').scope().closeModalWindow();
-    }
+    // Apply Angular scope changes to reflect data changes on the page
+    angular.element("[inv-modal]").scope().$apply();
+
+    log(
+      "Invite modal closed since groups file changed with",
+      event.detail.groups.length,
+      "groups"
+    );
+  }
 });

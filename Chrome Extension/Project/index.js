@@ -11,7 +11,7 @@ function loadGroups() {
 
     sessionStorage.setItem("groups", newValue);
 
-    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new CustomEvent("storage", { detail: {groups: result.groups} }));
   });
 }
 
