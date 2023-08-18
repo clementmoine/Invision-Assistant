@@ -6,6 +6,7 @@ body {
   display: flex;
   padding: 16px;
   font-size: 14px;
+  min-width: 320px;
   flex-direction: column;
 }
 
@@ -61,14 +62,28 @@ main > button#upload svg {
   aspect-ratio: 1;
 }
 
+main > .no_groups {
+  display: none;
+}
+
 main > ul#groups {
     display: flex;
     flex-direction: column;
     margin: 0;
     padding: 0;
 }
+
 main > ul#groups > li {
     display: flex;
+}
+
+main > ul#groups:empty, 
+main > ul#groups:empty ~ .guide > .groups_export {
+  display: none;
+}
+
+main > ul#groups:empty ~ .no_groups {
+  display: block;
 }
 
 footer {

@@ -15,12 +15,15 @@
     </header>
 
     <main>
-      <p>
-        Download and edit this
-        <a href="javascript:void" id="sample" download="sample.json">sample&nbsp;group&nbsp;file</a>
-        to create own groups.
-      </p>
       <ul id="groups"></ul>
+
+      <p class="no_groups">No registered groups yet 🧐</p>
+      
+      <p class="guide">
+        <a href="javascript:void" id="sample" download="sample.json">Download the sample&nbsp;group&nbsp;file</a>
+        <span class="groups_export">or <a href="javascript:void" id="export" download="export.json">export the current list</a></span>
+        to create your own groups.
+      </p>
 
       <button id="upload">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>upload</title><path fill="currentColor" d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z" /></svg>

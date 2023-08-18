@@ -27,10 +27,13 @@ const updateGroupsList = async function() {
     const groups = Array.isArray(result.groups) ? result.groups : [];
 
     if (groups.length === 0) {
-      document.querySelector("ul#groups").innerHTML = `<p>No registered groups yet 🧐</p>`;
+      document.querySelector("ul#groups").innerHTML = ``;
 
       return;
     } 
+
+    // Add the href to the generated export of current groups in a file 
+    document.querySelector("a#export").href = getJSONFileURL(groups);
 
     const list = groups.map((group) => {
       if (!group) {
@@ -41,14 +44,13 @@ const updateGroupsList = async function() {
     }).join('\n');
 
     document.querySelector("ul#groups").innerHTML = list;
-
   });
 };
 
-// Get the link to the sample file generated from the above sample JSON
-const getSampleFileURL = function() {
+// Get the link to a JSON file generated from the given json
+const getJSONFileURL = function(json) {
   // Format the sample to a JSON with indents
-  const jsonContent = JSON.stringify(sample, null, 2);
+  const jsonContent = JSON.stringify(json, null, 2);
 
   // Create a blob file
   const blob = new Blob([jsonContent], {
@@ -99,11 +101,11 @@ const upload = function () {
   input.click();
 };
 
+// Generate the displayed content of the currently loaded groups
+updateGroupsList();
+
 // Add event listeners to the upload button
 document.querySelector("button#upload").addEventListener("click", upload);
 
 // Add the href to the generated sample file 
-document.querySelector("a#sample").href = getSampleFileURL();
-
-// Generate the displayed content of the currently loaded groups
-updateGroupsList();
+document.querySelector("a#sample").href = getJSONFileURL(sample);

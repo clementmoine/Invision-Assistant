@@ -81,7 +81,7 @@ async function invite(emails, reverse = false) {
   // Apply Angular scope changes to reflect data changes on the page
   inviteModalScope.$apply();
 
-  log("Successfully sent invites");
+  log("Successfully changed selected members");
 }
 
 // Add the group name information in the display of the genuine InVision user list
@@ -110,14 +110,14 @@ function addGroupNameToUsers() {
 
     // Retrieve the user from the DOM email
     const user = getUserFromEmail(email);
-    const group = groups.find((group) => group.members.includes(email));
+    const userGroups = groups.filter((group) => group.members.includes(email));
 
-    if (!user || !group) {
+    if (!user || !userGroups.length) {
       return;
     }
 
     // Append the group name
-    userElement.querySelector("h2").innerHTML = `${user.name} • ${group.name}`;
+    userElement.querySelector("h2").innerHTML = `${user.name} • ${userGroups.map(({name}) => name).join(' • ')}`;
   });
 }
 
