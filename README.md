@@ -1,3 +1,6 @@
+**This repository is no longer maintained due to [InVision design collaboration services shutdown in December 2024](https://www.invisionapp.com/inside-design/invision-design-collaboration-services-shutdown/). I will keep this alive for educational purposes. If you have any question feel free to ask the in issues tab or add me on Discord: [@clement.moine](https://discordapp.com/users/1139534725107699793)**
+=====
+
 # 👨‍👧‍👧 Invision Assistant
 
 Adds groups to InVision 
@@ -22,7 +25,7 @@ You can install the extension from Chrome Web Store or manually from unpacked pa
 
 #### Chrome Web Store 
 
-🚧 Not validated on Chrome Web Store yet. 🏗
+Install the extension from the Chrome Web Store : https://chrome.google.com/webstore/detail/invision-assistant/fdjkmplhnhnbdphemgggnlimjkfpnklm
 
 #### Manual install
 
