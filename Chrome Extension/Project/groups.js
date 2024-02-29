@@ -61,11 +61,14 @@ async function invite(emails, reverse = false) {
 
     // If there is no associated user we invite the user by email (with , separator for each)
     if (!user) {
-      inviteModalScope.newusers.email = (inviteModalScope.newusers.email || "")
-        .split(",")
-        .filter((email) => email.length)
-        .concat(email)
-        .join(",");
+      inviteModalScope.newusers.email = Array.from(
+          new Set(
+              (inviteModalScope.newusers.email || "")
+                  .split(",")
+                  .filter(email => email.trim() !== "") // Remove empty
+                  .concat(email.trim()) // Add the mail address for new user
+          )
+      ).join(",");
 
       return;
     }
@@ -146,6 +149,9 @@ async function createGroupsTab() {
   const groupsContent = document.createElement("div");
 
   groupsContent.classList.add("content");
+
+  // Insert the error message after search
+  insertAfter(groupsTabContent, tabsContainer);
 
   // Create the list of groups with avatars
   const groupsList = document.createElement("ul");
@@ -289,6 +295,7 @@ async function createGroupsTab() {
     groupsList.append(groupElement);
   });
 
+
   // Create search container
   const search = document.createElement("div");
   search.classList.add("search");
@@ -309,6 +316,15 @@ async function createGroupsTab() {
   search.append(searchInput, searchFilterCount);
 
   groupsTabContent.prepend(search);
+
+  // Add the error message
+  const errorMessage = document.createElement("p");
+
+  errorMessage.classList.add("error-message");
+
+  errorMessage.innerHTML = `<strong>Oops</strong>:`;
+  
+  insertAfter(errorMessage, search);
 }
 
 function getUnselectedCount(groupName) {
@@ -659,6 +675,17 @@ var observer = new MutationObserver(async function (mutations) {
               addEventListeners();
 
               log("Groups properly added to invite modal ready to be used");
+            }
+
+            const errorMessage = document.querySelector('.groups .error-message');
+
+            if (scope.errorMessage?.length) {
+              errorMessage.innerHTML = `<strong>Oops</strong>: ${scope.errorMessage}`;
+
+              errorMessage.hidden = false;
+            } else {
+              errorMessage.hidden = true;
+              errorMessage.innerHTML = `<strong>Oops</strong>:`;
             }
           });
       }
